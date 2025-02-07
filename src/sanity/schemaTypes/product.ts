@@ -45,6 +45,12 @@ export const products=  defineType({
             type: 'number',
         },
         {
+            name: "inventory",
+            title: "inventory",
+            type: "number",
+
+        },
+        {
             name:"new",
             type: 'boolean',
             title:"New",

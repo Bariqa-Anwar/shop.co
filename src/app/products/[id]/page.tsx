@@ -1,155 +1,101 @@
-"use client";
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Image from 'next/image';
-import { FaStar } from 'react-icons/fa';
-import { client } from "@/sanity/lib/client";
+import { notFound } from "next/navigation";
+import { getProductById, getProductsByCategory, searchProducts } from "@/sanity/lib/client";
+import Link from "next/link";
+import CartButton from "@/components/CartButton"; 
+import WishlistButton from "@/components/WishlistButton";
 
-interface Product {
-  _id: string;
-  name: string;
-  price: number;
-  description: string;
-  imageUrl: string;
-  category: string;
-  discountPercent?: number; // Optional field
-  new: boolean;
-  colors?: string[]; // Optional field
-  sizes?: string[]; // Optional field
+// Define ProductPageProps interface with searchParams and params
+interface ProductPageProps {
+  params: { id: string }; // Product ID from the URL
+  searchParams: { category?: string; search?: string }; // Search or category filtering params
 }
 
-export default function ProductDetailPage() {
-  const { id } = useParams();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function ProductPage({ params, searchParams }: ProductPageProps) {
+  // Await searchParams to resolve
+  const { category, search } = searchParams;
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const query = `*[_type == "product" && _id == $id][0] {
-          _id,
-          name,
-          price,
-          description,
-          "imageUrl": image.asset->url,
-          category,
-          discountPercent,
-          new,
-          colors,
-          sizes
-        }`;
-        
-        const product: Product = await client.fetch(query, { id });
-        if (!product) {
-          throw new Error('Product not found.');
-        }
-        setProduct(product);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch product details.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProduct();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-64 text-red-500">
-        <p>{error}</p>
-      </div>
-    );
-  }
+  // Fetch product by ID (server-side fetch)
+  const product = await getProductById(params.id);
 
   if (!product) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p>Product not found.</p>
-      </div>
-    );
+    return notFound(); // Handle the case where the product isn't found
   }
 
+  // Fetch products by category (server-side fetch)
+  const productsByCategory = category
+    ? await getProductsByCategory(category, params.id)
+    : [];
+
+  // Fetch search suggestions (server-side fetch)
+  const searchSuggestions = search
+    ? await searchProducts(search)
+    : [];
+
   return (
-    <div className="">
-      <div className="flex flex-col ml-9 mt-9 sm:mt-14 sm:ml-40">
-        {/* Product Image */}
-        <div className="w-72 h-72 sm:w-80 sm::h-80">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            width={800}
-            height={800}
-            className="rounded-lg object-cover"
-          />
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Display search suggestions if available */}
+      {searchSuggestions.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">Search Suggestions:</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {searchSuggestions.map((suggestion) => (
+              <Link key={suggestion._id} href={`/products/${suggestion._id}`}>
+                <div className="bg-white rounded-lg shadow-lg p-4 hover:scale-105 transform transition duration-300">
+                  <img
+                    className="w-full h-64 object-cover rounded-t-lg mb-4"
+                    src={suggestion.image}
+                    alt={suggestion.name}
+                  />
+                  <p className="text-center text-lg font-semibold">{suggestion.name}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Display the product details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="flex justify-center">
+          <img className="w-full max-w-md h-auto object-cover rounded-lg shadow-lg" src={product.image} alt={product.name} />
         </div>
 
-        {/* Product Details */}
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold mb-4 sm:mt-12">{product.name}</h1>
-          <div className="flex items-center gap-2 mb-4">
-            {[1, 2, 3, 4].map((star) => (
-              <FaStar key={star} className="text-yellow-500" />
-            ))}
-            <span className="text-gray-500">4.0/5</span>
-          </div>
-          <p className="text-2xl font-bold mb-4">${product.price}</p>
-          
-          {/* Discounted Price Section */}
-          {product.discountPercent && product.discountPercent > 0 ? (
-            <div className="flex items-center gap-2 mb-4">
-              <s className="text-gray-500">
-                ${product.price + (product.price * product.discountPercent) / 100}
-              </s>
-              <span className="text-red-800 bg-red-100 px-2 py-1 rounded-full text-sm">
-                -{product.discountPercent}%
-              </span>
-            </div>
-          ) : null}
+        <div>
+          <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+          <p className="text-lg text-gray-600 mb-4">{product.description}</p>
+          <p className="text-xl font-semibold text-green-600 mb-4">${product.price}</p>
+          <p className="text-sm text-gray-500 mb-6">Category: {product.category}</p>
+        </div>
 
-          <p className="text-gray-600 text-base mb-4 sm:mr-14">{product.description}</p>
-
-          {/* Product Colors */}
-          {product.colors && product.colors.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              <p className="w-full text-sm font-semibold">Colors:</p>
-              {product.colors.map((color) => (
-                <span
-                  key={color}
-                  className="px-3 py-1 border rounded-full text-sm"
-                >
-                  {color}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Product Sizes */}
-          {product.sizes && product.sizes.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              <p className="w-full text-sm font-semibold">Sizes:</p>
-              {product.sizes.map((size) => (
-                <span
-                  key={size}
-                  className="px-3 py-1 border rounded-full text-sm"
-                >
-                  {size}
-                </span>
-              ))}
-            </div>
-          )}
+        {/* Cart and Wishlist buttons */}
+        <div className="mt-4">
+          <CartButton product={product} />
+        </div>
+        <div className="mt-3">
+        <WishlistButton product={product} />
         </div>
       </div>
+
+      {/* Show products by category if a category is selected */}
+      {productsByCategory.length > 0 && (
+        <div className="mt-16">
+          <h3 className="text-xl font-semibold mb-4">Other products in {product.category}:</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {productsByCategory.map((categoryProduct) => (
+              <Link key={categoryProduct._id} href={`/products/${categoryProduct._id}`}>
+                <div className="bg-white rounded-lg shadow-lg p-4 hover:scale-105 transform transition duration-300">
+                  <img
+                    className="w-full h-64 object-cover rounded-t-lg mb-4"
+                    src={categoryProduct.image}
+                    alt={categoryProduct.name}
+                  />
+                  <p className="text-center text-lg font-semibold">{categoryProduct.name}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

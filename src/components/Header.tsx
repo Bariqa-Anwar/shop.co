@@ -4,8 +4,8 @@ import Link from "next/link";
 export default function Header () {
     return (
         <>
-        <main className="overflow-x-hidden">
-            <div>
+        <main>
+            <div className="overflow-x-hidden">
                <div className=" bg-customGray mt-3 text-left">
                   <h1 className="font-extrabold font-sans text-4xl pt-6 ml-7 sm:mx-28 md:mx-0 md:ml-11 md:mr-96 lg:ml-20
                    lg:mr-[580px] lg:pt-12 xl:ml-24 xl:mr-[640px] xl:text-6xl">
