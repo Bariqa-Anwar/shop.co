@@ -7,7 +7,7 @@ export default function feedback (){
         <>
         <main>
         <div>
-        <div className="mt-9 flex overflow-x-hidden mx-8">
+        <div className="mt-9 flex overflow-x-hidden overflow-y-hidden mx-8">
                 <h1 className="font-sans font-extrabold text-2xl mx-5 sm:ml-36 md:ml-20 md:text-3xl lg:text-4xl lg:ml-24 xl:text-5xl">
                 OUR HAPPY CUSTOMERS</h1>
                 <ArrowLeft className="mt-10 mr-2 sm:mr-4 md:ml-28 lg:ml-64 xl:ml-[490px]"/>

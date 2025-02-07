@@ -91,7 +91,7 @@ export default function Selling() {
 
           {/* View All Button */}
           <div className="flex justify-center mt-6">
-            <Link href="/category">
+            <Link href="/productsListing">
               <button className="border rounded-full bg-white text-black font-semibold px-6 py-2 hover:bg-black hover:text-white transition-colors">
                 View All
               </button>
